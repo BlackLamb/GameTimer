@@ -8,12 +8,10 @@ namespace GameTimer
 {
     public class Program
     {
-        const int scale = 15;
-        static bool running = false;
-        static bool pause = false;
-        static int startTime;
-        static int elapsedTime = 0;
-        static Thread timerLoop;
+        const int scale = 60;
+        static Timer gameTimer;
+        static int timeCount = 0;
+        static bool blinkOff = false;
 
         // Gobus modules
         static NetduinoGo.RgbLed led1;
@@ -21,6 +19,7 @@ namespace GameTimer
         static NetduinoGo.RgbLed led3;
         static NetduinoGo.Button button1;
         static NetduinoGo.Button button2;
+        static NetduinoGo.PiezoBuzzer buzzer;
 
         public static void Main()
         {
@@ -30,6 +29,7 @@ namespace GameTimer
             led3 = new NetduinoGo.RgbLed(GoSockets.Socket6);
             button1 = new NetduinoGo.Button(GoSockets.Socket1);
             button2 = new NetduinoGo.Button(GoSockets.Socket3);
+            buzzer = new NetduinoGo.PiezoBuzzer();
 
             // Register Buttons
             button1.ButtonPressed += new NetduinoGo.Button.ButtonEventHandler(button1_ButtonPressed);
@@ -39,130 +39,110 @@ namespace GameTimer
             Thread.Sleep(Timeout.Infinite);
         }
 
-        // Start/Stop button
-        static void button2_ButtonPressed(object sender, bool buttonState)
-        {
-            if (!running)
-                StartTimmer();
-            else if (pause && running)
-                ResumeTimer();
-            else
-                PauseTimer();
-        }
-
-        private static void PauseTimer()
-        {
-            pause = true;
-        }
-
-        private static void ResumeTimer()
-        {
-            pause = false;
-        }
-
-        private static void StartTimmer()
-        {
-            if (timerLoop != null)
-                timerLoop.Abort();
-
-            timerLoop = new Thread(TimerThread);
-            timerLoop.Start();
-        }
-
         // Reset Button
         static void button1_ButtonPressed(object sender, bool buttonState)
         {
-            Reset();
+            ResetTimer();
         }
 
-        private static void Reset()
+        // Start/Stop button
+        static void button2_ButtonPressed(object sender, bool buttonState)
         {
-            StopThread();
-        }
-
-        private static void StopThread()
-        {
-            if (timerLoop != null)
-                timerLoop.Abort();
-        }
-
-        static void TimerThread()
-        {
-            try
+            if (gameTimer != null)
             {
-                startTime = (int)(DateTime.Now.Ticks / TimeSpan.TicksPerMillisecond);
-                int lastTime = startTime;
-                int currentTime = startTime;
-                running = true;
-
-                while (running)
-                {
-                    currentTime = (int)(DateTime.Now.Ticks / TimeSpan.TicksPerMillisecond);
-                    if (!pause)
-                    {
-                        elapsedTime += currentTime - lastTime;
-                        lastTime = currentTime;
-
-                        if (elapsedTime > 5000 * scale)
-                        {
-                            led1.SetColor(255, 0, 0);
-                            led2.SetColor(255, 0, 0);
-                            led3.SetColor(255, 0, 0);
-                            running = false;
-                        }
-                        else if (elapsedTime > 4500 * scale)
-                        {
-                            led1.SetColor(0, 0, 0);
-                            led2.SetColor(0, 0, 0);
-                            led3.SetColor(255, 255, 0);
-                        }
-                        else if (elapsedTime > 4000 * scale)
-                        {
-                            led1.SetColor(0, 0, 0);
-                            led2.SetColor(255, 255, 0);
-                            led3.SetColor(255, 255, 0);
-                        }
-                        else if (elapsedTime > 3000 * scale)
-                        {
-                            led1.SetColor(255, 255, 0);
-                            led2.SetColor(255, 255, 0);
-                            led3.SetColor(255, 255, 0);
-                        }
-                        else if (elapsedTime > 2000 * scale)
-                        {
-                            led1.SetColor(0, 0, 0);
-                            led2.SetColor(0, 0, 0);
-                            led3.SetColor(0, 255, 0);
-                        }
-                        else if (elapsedTime > 1000 * scale)
-                        {
-                            led1.SetColor(0, 0, 0);
-                            led2.SetColor(0, 255, 0);
-                            led3.SetColor(0, 255, 0);
-                        }
-                        else if (elapsedTime <= 1000 * scale)
-                        {
-                            led1.SetColor(0, 255, 0);
-                            led2.SetColor(0, 255, 0);
-                            led3.SetColor(0, 255, 0);
-                        }
-                    }
-                    else
-                        lastTime = currentTime;
-                }
-
-                Thread.Sleep(Timeout.Infinite);
+                ResetTimer();
             }
-            catch (ThreadAbortException ex)
+            buzzer.SetFrequency(1046.5f);
+            gameTimer = new Timer(new TimerCallback(TimerTick), null, 1000 * scale, 500 * scale);
+            led1.SetColor(0, 255, 0);
+            led2.SetColor(0, 255, 0);
+            led3.SetColor(0, 255, 0);
+            Thread.Sleep(20);
+            buzzer.SetFrequency(0.0f);
+        }
+
+        private static void TimerTick(object o)
+        {
+            timeCount++;
+            //Debug.Print("Tick: " + timeCount);
+            if (timeCount == 1) // 1 min has passed
             {
                 led1.SetColor(0, 0, 0);
-                led2.SetColor(0, 0, 0);
-                led3.SetColor(0, 0, 0);
-                elapsedTime = 0;
-                startTime = 0;
             }
-            finally { }
+            else if (timeCount == 3) // 2 min has passed
+            {
+                led2.SetColor(0, 0, 0);
+            }
+            else if (timeCount == 5) // 3 min has passed
+            {
+                led1.SetColor(255, 255, 0);
+                led2.SetColor(255, 255, 0);
+                led3.SetColor(255, 255, 0);
+            }
+            else if (timeCount == 7) // 4 min has passed
+            {
+                led1.SetColor(0, 0, 0);
+                buzzer.SetFrequency(523.25f);
+                Thread.Sleep(20);
+                buzzer.SetFrequency(0.0f);
+            }
+            else if (timeCount == 8) // 4.5 min pas passed
+            {
+                led2.SetColor(0, 0, 0);
+                buzzer.SetFrequency(523.25f);
+                Thread.Sleep(20);
+                buzzer.SetFrequency(0.0f);
+            }
+            else if (timeCount == 9) // 5 min has passed
+            {
+                led1.SetColor(255, 0, 0);
+                led3.SetColor(0, 0, 0);
+                buzzer.SetFrequency(440.0f);
+                Thread.Sleep(750);
+                buzzer.SetFrequency(0.0f);
+            }
+            else if (timeCount == 10)
+            {
+                led2.SetColor(255, 0, 0);
+            }
+            else if (timeCount == 11)
+            {
+                led3.SetColor(255, 0, 0);
+                buzzer.SetFrequency(440.0f);
+                Thread.Sleep(750);
+                buzzer.SetFrequency(0.0f);
+            }
+            else if (timeCount > 11)
+            {
+                gameTimer.Change(500, 500);
+                if (blinkOff)
+                {
+                    led1.SetColor(0, 0, 0);
+                    led2.SetColor(0, 0, 0);
+                    led3.SetColor(0, 0, 0);
+                    blinkOff = !blinkOff;
+                }
+                else
+                {
+                    led1.SetColor(255, 0, 0);
+                    led2.SetColor(255, 0, 0);
+                    led3.SetColor(255, 0, 0);
+                    blinkOff = !blinkOff;
+                    buzzer.SetFrequency(440.0f);
+                    Thread.Sleep(100);
+                    buzzer.SetFrequency(0.0f);
+                }
+            }
         }
 
+        private static void ResetTimer()
+        {
+            gameTimer.Dispose();
+            gameTimer = null;
+            led1.SetColor(0, 0, 0);
+            led2.SetColor(0, 0, 0);
+            led3.SetColor(0, 0, 0);
+            timeCount = 0;
+        }
     }
 }

@@ -40,6 +40,9 @@
     <Reference Include="Microsoft.SPOT.Hardware.SerialPort" />
     <Reference Include="Microsoft.SPOT.Native" />
     <Reference Include="NetduinoGo.Button, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL" />
+    <Reference Include="NetduinoGo.PiezoBuzzer">
+      <HintPath>..\..\..\..\..\Downloads\NetduinoGo.PiezoBuzzer\NetduinoGo.PiezoBuzzer.dll</HintPath>
+    </Reference>
     <Reference Include="NetduinoGo.RgbLed, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL" />
     <Reference Include="SecretLabs.NETMF.Hardware.NetduinoGo" />
     <Reference Include="GoBus" />
