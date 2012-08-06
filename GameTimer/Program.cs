@@ -1,4 +1,6 @@
-﻿using System;
+﻿#define mute
+
+using System;
 using System.Threading;
 using Microsoft.SPOT;
 using Microsoft.SPOT.Hardware;
@@ -8,10 +10,12 @@ namespace GameTimer
 {
     public class Program
     {
-        const int scale = 60;
         static Timer gameTimer;
         static int timeCount = 0;
         static bool blinkOff = false;
+        static int timerMin = 2;
+        static int scale;
+
 
         // Gobus modules
         static NetduinoGo.RgbLed led1;
@@ -29,7 +33,12 @@ namespace GameTimer
             led3 = new NetduinoGo.RgbLed(GoSockets.Socket6);
             button1 = new NetduinoGo.Button(GoSockets.Socket1);
             button2 = new NetduinoGo.Button(GoSockets.Socket3);
-            buzzer = new NetduinoGo.PiezoBuzzer();
+#if !mute
+            buzzer = new NetduinoGo.PiezoBuzzer(); 
+#endif
+
+            // Set Scale
+            scale = (timerMin * 60) / 5;
 
             // Register Buttons
             button1.ButtonPressed += new NetduinoGo.Button.ButtonEventHandler(button1_ButtonPressed);
@@ -52,19 +61,26 @@ namespace GameTimer
             {
                 ResetTimer();
             }
+#if !mute
             buzzer.SetFrequency(1046.5f);
+#endif
             gameTimer = new Timer(new TimerCallback(TimerTick), null, 1000 * scale, 500 * scale);
             led1.SetColor(0, 255, 0);
             led2.SetColor(0, 255, 0);
             led3.SetColor(0, 255, 0);
+#if !mute
             Thread.Sleep(20);
             buzzer.SetFrequency(0.0f);
+#endif
         }
 
         private static void TimerTick(object o)
         {
             timeCount++;
-            //Debug.Print("Tick: " + timeCount);
+#if !debug
+
+            Debug.Print("Tick: " + timeCount);
+#endif
             if (timeCount == 1) // 1 min has passed
             {
                 led1.SetColor(0, 0, 0);
@@ -82,24 +98,30 @@ namespace GameTimer
             else if (timeCount == 7) // 4 min has passed
             {
                 led1.SetColor(0, 0, 0);
+#if !mute
                 buzzer.SetFrequency(523.25f);
                 Thread.Sleep(20);
                 buzzer.SetFrequency(0.0f);
+#endif
             }
             else if (timeCount == 8) // 4.5 min pas passed
             {
                 led2.SetColor(0, 0, 0);
+#if !mute
                 buzzer.SetFrequency(523.25f);
                 Thread.Sleep(20);
                 buzzer.SetFrequency(0.0f);
+#endif
             }
             else if (timeCount == 9) // 5 min has passed
             {
                 led1.SetColor(255, 0, 0);
                 led3.SetColor(0, 0, 0);
+#if !mute
                 buzzer.SetFrequency(440.0f);
                 Thread.Sleep(750);
-                buzzer.SetFrequency(0.0f);
+                buzzer.SetFrequency(0.0f); 
+#endif
             }
             else if (timeCount == 10)
             {
@@ -108,9 +130,11 @@ namespace GameTimer
             else if (timeCount == 11)
             {
                 led3.SetColor(255, 0, 0);
+#if !mute
                 buzzer.SetFrequency(440.0f);
                 Thread.Sleep(750);
-                buzzer.SetFrequency(0.0f);
+                buzzer.SetFrequency(0.0f); 
+#endif
             }
             else if (timeCount > 11)
             {
@@ -128,16 +152,19 @@ namespace GameTimer
                     led2.SetColor(255, 0, 0);
                     led3.SetColor(255, 0, 0);
                     blinkOff = !blinkOff;
+#if (!mute)
                     buzzer.SetFrequency(440.0f);
                     Thread.Sleep(100);
-                    buzzer.SetFrequency(0.0f);
+                    buzzer.SetFrequency(0.0f); 
+#endif
                 }
             }
         }
 
         private static void ResetTimer()
         {
-            gameTimer.Dispose();
+            if (gameTimer != null)
+                gameTimer.Dispose();
             gameTimer = null;
             led1.SetColor(0, 0, 0);
             led2.SetColor(0, 0, 0);
