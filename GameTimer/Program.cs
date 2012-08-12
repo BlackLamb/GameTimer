@@ -16,7 +16,7 @@ namespace GameTimer
         static int timerMin = 5;
         static int scale;
         static timeModes mode = timeModes.five;
-        static bool changeMode = false;
+        static bool changeMode = true;
 
 
         // Gobus modules
