@@ -1,4 +1,4 @@
-﻿#define mute
+﻿//#define mute
 
 using System;
 using System.Threading;
@@ -13,7 +13,7 @@ namespace GameTimer
         static Timer gameTimer;
         static int timeCount = 0;
         static bool blinkOff = false;
-        static int timerMin = 2;
+        static int timerMin = 5;
         static int scale;
 
 
